@@ -1,0 +1,107 @@
+sequenceDiagram
+    participant U as Użytkownik
+    participant F as Frontend (React)
+    participant LB as Load Balancer
+    participant API as Django API
+    participant DB as PostgreSQL
+    participant C as Redis Cache
+    participant MQ as RabbitMQ
+    participant W as Celery Worker
+    participant ES as Email Service
+    
+    Note over U,ES: Proces Logowania
+    
+    U->>F: Wpisuje login i hasło
+    F->>LB: POST /api/auth/login/
+    LB->>API: Forward request
+    
+    API->>DB: SELECT * FROM users WHERE username=?
+    DB-->>API: User data
+    
+    API->>API: Verify password (bcrypt)
+    
+    alt Password correct
+        API->>API: Generate JWT tokens
+        API->>C: Store refresh token
+        C-->>API: OK
+        API-->>LB: 200 OK + {access, refresh}
+        LB-->>F: Response
+        F->>F: Store tokens in memory
+        F-->>U: Redirect to Dashboard
+    else Password incorrect
+        API-->>LB: 401 Unauthorized
+        LB-->>F: Error response
+        F-->>U: Show error message
+    end
+    
+    Note over U,ES: Proces Ukończenia Lekcji
+    
+    U->>F: Klik "Rozpocznij lekcję"
+    F->>LB: GET /api/lessons/1/<br/>Header: Authorization Bearer {token}
+    LB->>API: Forward with auth
+    
+    API->>C: Check cache for lesson data
+    
+    alt Cache hit
+        C-->>API: Lesson data
+    else Cache miss
+        API->>DB: SELECT * FROM lessons WHERE id=1
+        DB-->>API: Lesson data
+        API->>C: Store in cache (TTL 300s)
+    end
+    
+    API-->>LB: 200 OK + Lesson data
+    LB-->>F: Response
+    F-->>U: Display lesson content
+    
+    U->>F: Rozwiązuje ćwiczenie
+    F->>LB: POST /api/lessons/1/complete/<br/>{score: 85}
+    LB->>API: Forward request
+    
+    API->>DB: BEGIN TRANSACTION
+    
+    API->>DB: INSERT INTO progress<br/>(user_id, lesson_id, score, completed)
+    DB-->>API: Progress created
+    
+    API->>DB: UPDATE users<br/>SET points = points + 15<br/>WHERE id = user_id
+    DB-->>API: User updated
+    
+    API->>DB: SELECT * FROM achievements<br/>WHERE points_required <= user.points
+    DB-->>API: Eligible achievements
+    
+    loop For each new achievement
+        API->>DB: INSERT INTO user_achievements
+    end
+    
+    API->>DB: COMMIT
+    
+    API->>C: Invalidate user cache
+    C-->>API: OK
+    
+    API->>MQ: Publish message to 'lesson.completed'<br/>{user_id, lesson_id, score, timestamp}
+    MQ-->>API: ACK
+    
+    API-->>LB: 200 OK + {points_earned, achievements}
+    LB-->>F: Response
+    F-->>U: Show success + animation
+    
+    Note over MQ,ES: Asynchroniczne przetwarzanie
+    
+    MQ->>W: Deliver message
+    
+    par Process analytics
+        W->>DB: UPDATE analytics tables
+    and Send notification
+        W->>ES: Send email to parent
+        ES-->>W: Email sent
+    and Calculate recommendations
+        W->>DB: Run recommendation algorithm
+        W->>C: Store recommendations
+    end
+    
+    W-->>MQ: Task completed
+    
+    Note over U,ES: WebSocket Real-time Update (opcjonalnie)
+    
+    API->>F: Push notification via WebSocket<br/>"Achievement unlocked!"
+    F-->>U: Show toast notification

@@ -1,0 +1,91 @@
+graph TD
+    Start([Użytkownik rozpoczyna lekcję]) --> Auth{Czy użytkownik<br/>zalogowany?}
+    
+    Auth -->|Nie| Login[Przekierowanie<br/>na login]
+    Login --> Auth
+    
+    Auth -->|Tak| CheckAccess{Czy ma dostęp<br/>do kursu?}
+    
+    CheckAccess -->|Nie| Error1[Wyświetl błąd:<br/>Brak dostępu]
+    Error1 --> End1([Koniec])
+    
+    CheckAccess -->|Tak| LoadLesson[Załaduj treść lekcji<br/>z API]
+    
+    LoadLesson --> Display[Wyświetl materiał<br/>edukacyjny]
+    
+    Display --> ReadContent[Użytkownik czyta<br/>treść lekcji]
+    
+    ReadContent --> StartExercise{Czy są<br/>ćwiczenia?}
+    
+    StartExercise -->|Nie| MarkComplete[Oznacz jako<br/>ukończoną]
+    
+    StartExercise -->|Tak| ShowExercise[Wyświetl ćwiczenie]
+    
+    ShowExercise --> SolveExercise[Użytkownik rozwiązuje<br/>ćwiczenie]
+    
+    SolveExercise --> SubmitAnswer[Wyślij odpowiedź<br/>do API]
+    
+    SubmitAnswer --> ValidateAnswer[Backend: Walidacja<br/>odpowiedzi]
+    
+    ValidateAnswer --> CheckScore{Wynik >= 70%?}
+    
+    CheckScore -->|Nie| Retry{Czy są próby<br/>pozostałe?}
+    
+    Retry -->|Tak| ShowExercise
+    Retry -->|Nie| Failed[Status: Nieukończone]
+    Failed --> End2([Koniec])
+    
+    CheckScore -->|Tak| SaveProgress[Zapisz postęp<br/>w bazie danych]
+    
+    SaveProgress --> UpdatePoints[Dodaj punkty<br/>użytkownikowi]
+    
+    UpdatePoints --> PublishEvent[Publikuj event<br/>do RabbitMQ]
+    
+    PublishEvent --> CheckLevel{Czy awans<br/>na poziom?}
+    
+    CheckLevel -->|Tak| LevelUp[Awansuj poziom<br/>użytkownika]
+    CheckLevel -->|Nie| CheckAchievement
+    
+    LevelUp --> NotifyLevel[Wyślij powiadomienie<br/>o awansie]
+    NotifyLevel --> CheckAchievement
+    
+    CheckAchievement{Czy zdobyte<br/>osiągnięcie?}
+    
+    CheckAchievement -->|Tak| GrantAchievement[Przyznaj osiągnięcie]
+    GrantAchievement --> NotifyAchievement[Wyślij powiadomienie<br/>o osiągnięciu]
+    NotifyAchievement --> UpdateStats
+    
+    CheckAchievement -->|Nie| UpdateStats[Aktualizuj statystyki<br/>użytkownika]
+    
+    UpdateStats --> AsyncTasks[Celery: Uruchom zadania<br/>asynchroniczne]
+    
+    AsyncTasks --> CalcRecommend[Oblicz rekomendacje<br/>następnych lekcji]
+    AsyncTasks --> UpdateAnalytics[Aktualizuj analizy]
+    AsyncTasks --> SendEmail[Wyślij email<br/>do rodzica]
+    
+    CalcRecommend --> ShowResults
+    UpdateAnalytics --> ShowResults
+    SendEmail --> ShowResults
+    
+    ShowResults[Wyświetl wynik<br/>i gratulacje]
+    
+    ShowResults --> NextLesson{Czy przejść do<br/>następnej lekcji?}
+    
+    NextLesson -->|Tak| LoadLesson
+    NextLesson -->|Nie| ShowDashboard[Powrót do<br/>dashboard]
+    
+    ShowDashboard --> Success([Koniec])
+    
+    style Start fill:#4CAF50
+    style Auth fill:#FFC107
+    style CheckAccess fill:#FFC107
+    style ValidateAnswer fill:#2196F3
+    style CheckScore fill:#FFC107
+    style SaveProgress fill:#2196F3
+    style PublishEvent fill:#9C27B0
+    style CheckLevel fill:#FFC107
+    style CheckAchievement fill:#FFC107
+    style AsyncTasks fill:#9C27B0
+    style Success fill:#4CAF50
+    style End1 fill:#F44336
+    style End2 fill:#F44336

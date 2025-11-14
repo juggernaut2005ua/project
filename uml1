@@ -1,0 +1,148 @@
+classDiagram
+    class User {
+        +int id
+        +string username
+        +string email
+        +string password_hash
+        +string role
+        +int age
+        +int points
+        +int level
+        +boolean two_factor_enabled
+        +datetime created_at
+        +datetime updated_at
+        +login()
+        +logout()
+        +updateProfile()
+        +addPoints(amount)
+        +levelUp()
+    }
+    
+    class Course {
+        +int id
+        +string title
+        +string description
+        +string difficulty
+        +string icon
+        +string color
+        +int order
+        +boolean is_active
+        +datetime created_at
+        +datetime updated_at
+        +getLessons()
+        +getStudentCount()
+        +calculateProgress(userId)
+    }
+    
+    class Lesson {
+        +int id
+        +int course_id
+        +string title
+        +string content
+        +int order
+        +int points
+        +int duration_minutes
+        +boolean is_active
+        +datetime created_at
+        +getExercises()
+        +markCompleted(userId)
+        +getCompletionRate()
+    }
+    
+    class Exercise {
+        +int id
+        +int lesson_id
+        +string title
+        +string description
+        +string exercise_type
+        +json content
+        +int points
+        +int order
+        +datetime created_at
+        +validate(answer)
+        +calculateScore(answer)
+    }
+    
+    class Progress {
+        +int id
+        +int user_id
+        +int lesson_id
+        +boolean completed
+        +int score
+        +int attempts
+        +datetime completed_at
+        +datetime created_at
+        +datetime updated_at
+        +updateScore(score)
+        +incrementAttempts()
+    }
+    
+    class Achievement {
+        +int id
+        +string name
+        +string description
+        +string icon
+        +int points_required
+        +datetime created_at
+        +checkEligibility(userId)
+        +award(userId)
+    }
+    
+    class UserAchievement {
+        +int id
+        +int user_id
+        +int achievement_id
+        +datetime earned_at
+    }
+    
+    class ActivityLog {
+        +int id
+        +int user_id
+        +string action
+        +json details
+        +string ip_address
+        +datetime created_at
+        +log(action, details)
+    }
+    
+    class Enrollment {
+        +int id
+        +int user_id
+        +int course_id
+        +datetime enrolled_at
+        +datetime last_accessed
+        +float progress_percentage
+        +calculateProgress()
+    }
+    
+    class Notification {
+        +int id
+        +int user_id
+        +string type
+        +string title
+        +string message
+        +boolean read
+        +datetime created_at
+        +markAsRead()
+        +send()
+    }
+    
+    User "1" -- "*" Progress : has
+    User "1" -- "*" UserAchievement : earns
+    User "1" -- "*" ActivityLog : generates
+    User "1" -- "*" Enrollment : enrolls
+    User "1" -- "*" Notification : receives
+    
+    Course "1" -- "*" Lesson : contains
+    Course "1" -- "*" Enrollment : has
+    
+    Lesson "1" -- "*" Exercise : contains
+    Lesson "1" -- "*" Progress : tracks
+    
+    Achievement "1" -- "*" UserAchievement : awarded
+    
+    note for User "Główna encja reprezentująca\nużytkownika platformy.\nObsługuje autentykację i profil."
+    
+    note for Progress "Śledzi postęp użytkownika\nw każdej lekcji.\nPrzechowuje wyniki i liczbę prób."
+    
+    note for Exercise "Ćwiczenia przypisane do lekcji.\nTypy: quiz, code, drag_drop"

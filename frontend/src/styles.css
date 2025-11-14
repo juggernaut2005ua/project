@@ -1,0 +1,10 @@
+body{font-family: Inter, Roboto, Arial, sans-serif; margin:0; padding:0; background:#f7f8fb; color:#222}
+.container{max-width:1000px; margin:0 auto; padding:0 16px}
+.topnav{background:#0b5cff; color:white; padding:10px 0}
+.topnav .container{display:flex; align-items:center; justify-content:space-between}
+.brand{color:white; font-weight:700; text-decoration:none}
+main{padding:24px}
+.create-form{background:white; padding:16px; border-radius:8px; margin-bottom:16px}
+.create-form label{display:block; margin-bottom:8px}
+.create-form input, .create-form textarea, .create-form select{width:100%; padding:8px; box-sizing:border-box}
+.task{background:white; padding:12px; border-radius:8px; margin-bottom:8px}

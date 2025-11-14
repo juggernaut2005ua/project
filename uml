@@ -1,0 +1,70 @@
+graph TB
+    subgraph "Frontend Layer"
+        A[React Web App<br/>Port 3000]
+        B[React Native<br/>Mobile App]
+    end
+    
+    subgraph "API Gateway"
+        C[Nginx Load Balancer<br/>HTTPS/TLS]
+    end
+    
+    subgraph "Application Layer"
+        D[Django API Server 1<br/>Port 8000]
+        E[Django API Server 2<br/>Port 8001]
+        F[Auth Microservice<br/>Port 8002]
+    end
+    
+    subgraph "Message Queue Layer"
+        G[RabbitMQ Broker<br/>Port 5672]
+        H[Celery Workers x4]
+    end
+    
+    subgraph "Data Layer"
+        I[(PostgreSQL<br/>Primary DB)]
+        J[(PostgreSQL<br/>Replica)]
+        K[Redis Cache<br/>Port 6379]
+    end
+    
+    subgraph "External Services"
+        L[Email Service<br/>SMTP]
+        M[Analytics Service]
+        N[Notification Service]
+    end
+    
+    A -->|HTTPS| C
+    B -->|HTTPS| C
+    
+    C -->|Round Robin| D
+    C -->|Round Robin| E
+    C --> F
+    
+    D -->|Publish Events| G
+    E -->|Publish Events| G
+    F -->|JWT Validation| K
+    
+    G -->|Consume Tasks| H
+    
+    D -->|Read/Write| I
+    E -->|Read/Write| I
+    F -->|Read| J
+    
+    D -->|Cache| K
+    E -->|Cache| K
+    
+    H -->|Background Tasks| L
+    H -->|Data Analysis| M
+    H -->|Push Notifications| N
+    
+    I -->|Replication| J
+    
+    style A fill:#4FC3F7
+    style B fill:#4FC3F7
+    style C fill:#66BB6A
+    style D fill:#FFA726
+    style E fill:#FFA726
+    style F fill:#FFA726
+    style G fill:#AB47BC
+    style H fill:#AB47BC
+    style I fill:#EC407A
+    style J fill:#EC407A
+    style K fill:#26A69A
