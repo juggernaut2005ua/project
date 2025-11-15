@@ -1,1 +1,60 @@
-создай мне проект на тему Platforma Rozwijania Umiejętności Programowania dla Dzieci с такими заданиями Cel zadania: Zaprojektowanie procesu integracji dwóch systemów informatycznych z uwzględnieniem architektury, bezpieczeństwa, skalowalności oraz zgodności ze standardami branżowymi. Zakres prac: ·         - Wybór systemów/aplikacji do integracji (np. CRM + system magazynowy, aplikacja webowa + ERP, system medyczny + panel użytkownika + aplikacja mobilna). ·         - Określenie typu integracji (jednostronna lub dwustronna). ·         - Projekt architektury integracji (SOA, mikroserwisy, monolit z API) z diagramami UML i BPMN. ·         - Uwzględnienie mechanizmów bezpieczeństwa (OAuth2, JWT, TLS, HTTPS). ·         - Zaplanowanie skalowalności (kolejki komunikatów, load balancing, monitoring). ·         - Zgodność ze standardami OASIS (AMQP, MQTT, ODATA).     Cel zadania: Stworzenie aplikacji webowej i mobilnej, która integruje dane z dwóch systemów, umożliwia zarządzanie tożsamością użytkowników oraz prezentuje dane w przejrzystym interfejsie.   Zakres prac: - Projekt funkcjonalny aplikacji (grupa docelowa, role użytkowników, moduły: konto, dane, rekomendacje, historia). - Backend i API (Django + DRF (ewentualnie Laravel/Lumen), JWT, 2FA, CRUD, paginacja, filtrowanie, zabezpieczenia). - Aplikacja webowa (Next.js, Nuxt.js, Szablony Django, UX/UI, responsywność(Bootstrap, Tailwind Foundation, Bulma, Materialize)) - Aplikacja mobilna (React Native, Expo, UX/UI, responsywność(Bootstrap, Tailwind, Foundation, Bula Materialize)). - Moduł analizy i rekomendacji (opcjonalnie: TensorFlow, Scikit-learn, alerty). - Bezpieczeństwo (SSL, AES, ograniczenie dostępu, logowanie aktywności).    Cel zadania: Zbudowanie mechanizmu komunikacji między dwoma systemami z użyciem brokera wiadomości oraz synchronizacji danych z bazą danych.   Zakres prac: - Wybór technologii komunikacyjnej (RabbitMQ, Kafka, MQTT; JSON/XML; HTTP/WebSocket/AMQP). - Implementacja przesyłu danych (mikroserwisy, publikacja/subskrypcja, walidacja danych). - Synchronizacja z bazą danych (MySQL, PostgreSQL, SQLite; aktualizacja, dodawanie, rozwiązywanie konfliktów). - Obsługa błędów (retry logic, logowanie, buforowanie). - Testy integracyjne (przesył danych, poprawność synchronizacji, raport z testów).
+# backend/integrations/serializers.py
+from rest_framework import serializers
+from .models import SystemA, SystemB, IntegrationTask, IntegrationEvent, DataMapping
+
+class SystemASerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemA
+        fields = '__all__'
+        extra_kwargs = {
+            'api_key': {'write_only': True}
+        }
+
+
+class SystemBSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemB
+        fields = '__all__'
+        extra_kwargs = {
+            'api_key': {'write_only': True}
+        }
+
+
+class DataMappingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataMapping
+        fields = '__all__'
+
+
+class IntegrationEventSerializer(serializers.ModelSerializer):
+    event_type_display = serializers.CharField(source='get_event_type_display', read_only=True)
+    
+    class Meta:
+        model = IntegrationEvent
+        fields = '__all__'
+
+
+class IntegrationTaskSerializer(serializers.ModelSerializer):
+    system_a_name = serializers.CharField(source='system_a.name', read_only=True)
+    system_b_name = serializers.CharField(source='system_b.name', read_only=True)
+    direction_display = serializers.CharField(source='get_direction_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    mappings = DataMappingSerializer(many=True, read_only=True)
+    recent_events = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = IntegrationTask
+        fields = '__all__'
+    
+    def get_recent_events(self, obj):
+        events = obj.events.all()[:5]
+        return IntegrationEventSerializer(events, many=True).data
+
+
+class IntegrationTaskCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IntegrationTask
+        fields = [
+            'name', 'description', 'system_a', 'system_b', 
+            'direction', 'schedule_enabled', 'schedule_interval'
+        ]
