@@ -3,6 +3,7 @@ import api from './api'
 import TasksList from './components/TasksList'
 import CreateTask from './components/CreateTask'
 import Nav from './components/Nav'
+import CoursesList from './components/CoursesList'
 
 export default function App(){
   const [tasks, setTasks] = useState([])
@@ -41,11 +42,15 @@ export default function App(){
     <div className="app">
       <Nav />
       <main>
-        <h1>Интеграции — задачи</h1>
+        <h1>KodKids — платформа для детей</h1>
         {loading ? <p>Загрузка...</p> : (
           <>
-            <CreateTask onCreate={handleCreateTask} systemsA={systemsA} systemsB={systemsB} />
-            <TasksList tasks={tasks} />
+            <section>
+              <h2>Интеграции — задачи</h2>
+              <CreateTask onCreate={handleCreateTask} systemsA={systemsA} systemsB={systemsB} />
+              <TasksList tasks={tasks} />
+            </section>
+            <CoursesList />
           </>
         )}
       </main>
